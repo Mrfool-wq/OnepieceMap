@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Line Interactive Map - One Piece</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial Black', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 5px solid #ff6b35;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            text-shadow: 3px 3px 0 #000, -1px -1px 0 #ff6b35;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #ffeb3b;
+        }
+
+        .map-container {
+            position: relative;
+            width: 95%;
+            max-width: 1400px;
+            margin: 40px auto;
+            background: rgba(20, 20, 50, 0.8);
+            border: 5px solid #ff6b35;
+            border-radius: 15px;
+            padding: 40px 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7);
+        }
+
+        .map-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+        }
+
+        .paradise { background: #4CAF50; }
+        .new-world { background: #f44336; }
+        .major-arc { background: #FFD700; }
+
+        .route-section {
+            margin: 30px 0;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #FFD700;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px #000;
+            padding: 10px;
+            background: rgba(255, 107, 53, 0.3);
+            border-left: 5px solid #ff6b35;
+        }
+
+        .islands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .island-card {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border: 3px solid #ff6b35;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .island-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(255, 107, 53, 0.6);
+            border-color: #ffd700;
+        }
+
+        .island-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: 0.5s;
+        }
+
+        .island-card:hover::before {
+            left: 100%;
+        }
+
+        .island-number {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ff6b35;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            border: 2px solid #ffd700;
+        }
+
+        .island-name {
+            font-size: 1.5em;
+            color: #FFD700;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .island-type {
+            display: inline-block;
+            background: #ff6b35;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .island-description {
+            color: #ecf0f1;
+            line-height: 1.6;
+            margin-top: 10px;
+            font-size: 0.95em;
+        }
+
+        .island-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255, 107, 53, 0.5);
+        }
+
+        .detail-item {
+            color: #bdc3c7;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+
+        .detail-label {
+            color: #FFD700;
+            font-weight: bold;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            margin: 5% auto;
+            padding: 40px;
+            border: 5px solid #ff6b35;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 20px 60px rgba(255, 107, 53, 0.5);
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .close {
+            color: #ff6b35;
+            float: right;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 30px;
+        }
+
+        .close:hover {
+            color: #ffd700;
+        }
+
+        .modal-title {
+            font-size: 2.5em;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        .modal-body {
+            color: #ecf0f1;
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+
+        .crew-members {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 107, 53, 0.2);
+            border-radius: 10px;
+            border-left: 5px solid #ff6b35;
+        }
+
+        .crew-title {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .islands-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+                margin: 10% auto;
+            }
+
+            .map-legend {
+                gap: 15px;
+            }
+        }
+
+        .journey-path {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+            border: 2px dashed #ffd700;
+        }
+
+        .journey-path h3 {
+            color: #FFD700;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .path-arrow {
+            color: #ff6b35;
+            font-size: 2em;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚓ GRAND LINE MAP ⚓</h1>
+        <p>Follow the Straw Hat Pirates' Epic Journey Across the Seas!</p>
+    </div>
+
+    <div class="map-container">
+        <div class="map-legend">
+            <div class="legend-item">
+                <div class="legend-color paradise"></div>
+                <span>Paradise (First Half)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color new-world"></div>
+                <span>New World (Second Half)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color major-arc"></div>
+                <span>Major Story Arc</span>
+            </div>
+        </div>
+
+        <!-- PARADISE SECTION -->
+        <div class="route-section">
+            <div class="section-title">🌊 PARADISE - First Half of the Grand Line</div>
+            <div class="islands-grid" id="paradiseIslands"></div>
+        </div>
+
+        <!-- NEW WORLD SECTION -->
+        <div class="route-section">
+            <div class="section-title">🔥 NEW WORLD - Second Half of the Grand Line</div>
+            <div class="islands-grid" id="newWorldIslands"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="islandModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const paradiseIslands = [
+            {
+                name: "Twin Cape / Reverse Mountain",
+                type: "Entry Point",
+                order: 1,
+                description: "The entrance to the Grand Line where all routes converge. Home to Laboon the whale.",
+                arc: "Reverse Mountain Arc",
+                episodes: "62-63",
+                keyEvents: "Meeting Laboon, entering the Grand Line",
+                crewMembers: "Luffy, Zoro, Nami, Usopp, Sanji"
+            },
+            {
+                name: "Whiskey Peak",
+                type: "Island",
+                order: 2,
+                description: "A cactus-shaped island inhabited by Baroque Works bounty hunters disguised as welcoming townsfolk.",
+                arc: "Whiskey Peak Arc",
+                episodes: "64-67",
+                keyEvents: "Baroque Works revealed, Vivi joins crew",
+                crewMembers: "Straw Hats + Vivi"
+            },
+            {
+                name: "Little Garden",
+                type: "Island",
+                order: 3,
+                description: "A prehistoric island with giant dinosaurs and two giants locked in eternal combat.",
+                arc: "Little Garden Arc",
+                episodes: "70-77",
+                keyEvents: "Meeting Dorry and Brogy, Mr. 3's wax powers",
+                crewMembers: "Straw Hats + Vivi"
+            },
+            {
+                name: "Drum Island",
+                type: "Winter Island",
+                order: 4,
+                description: "A snowy medical kingdom ruled by King Wapol. Where Chopper joins the crew.",
+                arc: "Drum Island Arc",
+                episodes: "78-91",
+                keyEvents: "Chopper joins, Hiriluk's cherry blossoms",
+                crewMembers: "Luffy, Nami, Sanji, Vivi + CHOPPER"
+            },
+            {
+                name: "Arabasta Kingdom",
+                type: "Desert Kingdom",
+                order: 5,
+                description: "A massive desert kingdom threatened by civil war orchestrated by Crocodile and Baroque Works.",
+                arc: "Arabasta Arc",
+                episodes: "92-130",
+                keyEvents: "Defeating Crocodile, saving Arabasta, Ace appears",
+                crewMembers: "Full Straw Hat crew + Vivi"
+            },
+            {
+                name: "Jaya",
+                type: "Island",
+                order: 6,
+                description: "A skull-shaped island split in half. Home to Mock Town and information about Sky Island.",
+                arc: "Jaya Arc",
+                episodes: "144-152",
+                keyEvents: "Meeting Blackbeard, learning about Skypiea",
+                crewMembers: "Full Straw Hat crew"
+            },
+            {
+                name: "Skypiea",
+                type: "Sky Island",
+                order: 7,
+                description: "A legendary island in the clouds ruled by the tyrant god Enel with lightning powers.",
+                arc: "Skypiea Arc",
+                episodes: "153-195",
+                keyEvents: "Defeating Enel, ringing the Golden Bell",
+                crewMembers: "Full Straw Hat crew"
+            },
+            {
+                name: "Long Ring Long Island",
+                type: "Island",
+                order: 8,
+                description: "An island with unusually elongated animals where the Davy Back Fight takes place.",
+                arc: "Long Ring Long Island Arc",
+                episodes: "207-219",
+                keyEvents: "Davy Back Fight, meeting Admiral Aokiji",
+                crewMembers: "Full Straw Hat crew"
+            },
+            {
+                name: "Water 7",
+                type: "Water City",
+                order: 9,
+                description: "A Venice-like city of shipwrights where the Going Merry's fate is decided.",
+                arc: "Water 7 Arc",
+                episodes: "229-263",
+                keyEvents: "Meeting Franky, Going Merry's end, Robin's departure",
+                crewMembers: "Full Straw Hat crew"
+            },
+            {
+                name: "Enies Lobby",
+                type: "Government Island",
+                order: 10,
+                description: "The judicial island of the World Government where Robin is taken.",
+                arc: "Enies Lobby Arc",
+                episodes: "264-312",
+                keyEvents: "Rescuing Robin, declaring war on World Government, Franky joins",
+                crewMembers: "Straw Hats + FRANKY"
+            },
+            {
+                name: "Thriller Bark",
+                type: "Ghost Ship",
+                order: 11,
+                description: "A massive ship island filled with zombies controlled by Gecko Moria.",
+                arc: "Thriller Bark Arc",
+                episodes: "337-381",
+                keyEvents: "Defeating Moria, Brook joins crew, meeting Kuma",
+                crewMembers: "Straw Hats + BROOK"
+            },
+            {
+                name: "Sabaody Archipelago",
+                type: "Archipelago",
+                order: 12,
+                description: "The final stop before the New World, located near the Red Line. Where the crew is separated.",
+                arc: "Sabaody Archipelago Arc",
+                episodes: "385-405",
+                keyEvents: "Meeting the Supernovas, crew separated by Kuma",
+                crewMembers: "Full Straw Hat crew (separated)"
+            },
+            {
+                name: "Amazon Lily",
+                type: "Women's Island",
+                order: 13,
+                description: "An island inhabited only by warrior women, ruled by Boa Hancock.",
+                arc: "Amazon Lily Arc",
+                episodes: "408-417",
+                keyEvents: "Luffy meets Boa Hancock, learns Haki basics",
+                crewMembers: "Luffy only"
+            },
+            {
+                name: "Impel Down",
+                type: "Prison",
+                order: 14,
+                description: "The world's greatest underwater prison with multiple levels of torture.",
+                arc: "Impel Down Arc",
+                episodes: "422-425, 430-452",
+                keyEvents: "Luffy breaks into prison, reunites with old enemies",
+                crewMembers: "Luffy + allies"
+            },
+            {
+                name: "Marineford",
+                type: "Marine HQ",
+                order: 15,
+                description: "Marine Headquarters where the Summit War takes place to execute Ace.",
+                arc: "Marineford Arc",
+                episodes: "459-489",
+                keyEvents: "Ace's death, Whitebeard's death, Blackbeard's rise",
+                crewMembers: "Luffy + Whitebeard Pirates"
+            }
+        ];
+
+        const newWorldIslands = [
+            {
+                name: "Fish-Man Island",
+                type: "Underwater Kingdom",
+                order: 16,
+                description: "An underwater paradise 10,000 meters below the Red Line, home to Fish-Men and Merfolk.",
+                arc: "Fish-Man Island Arc",
+                episodes: "517-574",
+                keyEvents: "Defeating Hody Jones, Joyboy's promise, crew reunites",
+                crewMembers: "Full Straw Hat crew (reunited after 2 years)"
+            },
+            {
+                name: "Punk Hazard",
+                type: "Research Island",
+                order: 17,
+                description: "An island split between fire and ice, formerly a government research facility.",
+                arc: "Punk Hazard Arc",
+                episodes: "579-625",
+                keyEvents: "Law alliance formed, defeating Caesar Clown",
+                crewMembers: "Straw Hats + Law"
+            },
+            {
+                name: "Dressrosa",
+                type: "Kingdom",
+                order: 18,
+                description: "A passionate kingdom secretly controlled by Doflamingo, with a dark underground.",
+                arc: "Dressrosa Arc",
+                episodes: "629-746",
+                keyEvents: "Defeating Doflamingo, Sabo returns, Grand Fleet formed",
+                crewMembers: "Straw Hats + allies"
+            },
+            {
+                name: "Zou",
+                type: "Elephant Island",
+                order: 19,
+                description: "A giant elephant (Zunisha) that has been walking for 1000 years, home to the Mink Tribe.",
+                arc: "Zou Arc",
+                episodes: "751-779",
+                keyEvents: "Meeting Minks, learning about Road Poneglyphs, Sanji's departure",
+                crewMembers: "Straw Hats (partial crew)"
+            },
+            {
+                name: "Whole Cake Island",
+                type: "Food Paradise",
+                order: 20,
+                description: "Big Mom's territory made entirely of food and sweets.",
+                arc: "Whole Cake Island Arc",
+                episodes: "783-877",
+                keyEvents: "Rescuing Sanji, defeating Big Mom commanders, wedding chaos",
+                crewMembers: "Luffy, Nami, Chopper, Brook, Sanji"
+            },
+            {
+                name: "Wano Country",
+                type: "Isolated Kingdom",
+                order: 21,
+                description: "A closed-off samurai nation under Kaido's tyrannical rule.",
+                arc: "Wano Country Arc",
+                episodes: "890-1085",
+                keyEvents: "Defeating Kaido, Luffy's Gear 5 awakening, opening Wano's borders",
+                crewMembers: "Full Straw Hat crew + Samurai alliance"
+            },
+            {
+                name: "Egghead Island",
+                type: "Future Island",
+                order: 22,
+                description: "An advanced technological island 500 years ahead of the world, home to Dr. Vegapunk.",
+                arc: "Egghead Arc",
+                episodes: "1086-ongoing",
+                keyEvents: "Meeting Vegapunk, ancient robot, learning true history",
+                crewMembers: "Full Straw Hat crew"
+            },
+            {
+                name: "Elbaf",
+                type: "Giants' Kingdom",
+                order: 23,
+                description: "The legendary kingdom of giants that Usopp dreams of visiting. (Future Arc)",
+                arc: "Upcoming Arc",
+                episodes: "TBA",
+                keyEvents: "Meeting the giant warriors, Viking-themed adventures",
+                crewMembers: "Full Straw Hat crew (expected)"
+            },
+            {
+                name: "Laugh Tale",
+                type: "Final Island",
+                order: 24,
+                description: "The last island of the Grand Line where the One Piece treasure is hidden.",
+                arc: "Final Arc",
+                episodes: "Unknown",
+                keyEvents: "The One Piece revealed, truth of the world",
+                crewMembers: "Full Straw Hat crew (expected)"
+            }
+        ];
+
+        function createIslandCard(island, region) {
+            return `
+                <div class="island-card" onclick="openModal(${island.order}, '${region}')">
+                    <div class="island-number">${island.order}</div>
+                    <div class="island-name">${island.name}</div>
+                    <div class="island-type">${island.type}</div>
+                    <div class="island-description">${island.description}</div>
+                    <div class="island-details">
+                        <div class="detail-item"><span class="detail-label">Arc:</span> ${island.arc}</div>
+                        <div class="detail-item"><span class="detail-label">Episodes:</span> ${island.episodes}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderIslands() {
+            const paradiseContainer = document.getElementById('paradiseIslands');
+            const newWorldContainer = document.getElementById('newWorldIslands');
+
+            paradiseContainer.innerHTML = paradiseIslands.map(island => 
+                createIslandCard(island, 'paradise')
+            ).join('');
+
+            newWorldContainer.innerHTML = newWorldIslands.map(island => 
+                createIslandCard(island, 'newWorld')
+            ).join('');
+        }
+
+        function openModal(order, region) {
+            const islands = region === 'paradise' ? paradiseIslands : newWorldIslands;
+            const island = islands.find(i => i.order === order);
+
+            if (island) {
+                document.getElementById('modalTitle').textContent = island.name;
+                document.getElementById('modalBody').innerHTML = `
+                    <p><strong style="color: #FFD700;">Type:</strong> ${island.type}</p>
+                    <p><strong style="color: #FFD700;">Story Arc:</strong> ${island.arc}</p>
+                    <p><strong style="color: #FFD700;">Episodes:</strong> ${island.episodes}</p>
+                    <p style="margin-top: 15px;"><strong style="color: #FFD700;">Description:</strong><br>${island.description}</p>
+                    <div class="crew-members">
+                        <div class="crew-title">🏴‍☠️ Crew Members Present:</div>
+                        <p>${island.crewMembers}</p>
+                    </div>
+                    <div class="crew-members">
+                        <div class="crew-title">⭐ Key Events:</div>
+                        <p>${island.keyEvents}</p>
+                    </div>
+                `;
+                document.getElementById('islandModal').style.display = 'block';
+            }
+        }
+
+        // Close modal
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('islandModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('islandModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Initialize
+        renderIslands();
+    </script>
+</body>
+</html>
